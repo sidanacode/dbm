@@ -1,5 +1,8 @@
 # DBM
 
+[![CI](https://github.com/sidanacode/dbm/actions/workflows/ci.yml/badge.svg)](https://github.com/sidanacode/dbm/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+
 DBM coordinates database migration intent before migration files are finalized.
 
 Developers and coding agents submit structured schema changes to a shared coordinator. DBM compares those changes with the accepted migration graph and other active work, then reports safe changes, stale bases, dependencies, and deterministic conflicts.
