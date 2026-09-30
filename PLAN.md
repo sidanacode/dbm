@@ -55,7 +55,7 @@ Exit criterion: an MCP client can reproduce the three-developer demo.
 - [x] Add GitHub Actions for lint, type checking, and tests.
 - [x] Add example intent payloads and a documented demo.
 - [x] Complete contributor documentation and the portable Agent Skill.
-- [ ] Create the public GitHub repository and push `main`.
+- [x] Create the public GitHub repository and push `main`.
 
 Exit criterion: a new contributor can clone the repository and run the demo from the README.
 
