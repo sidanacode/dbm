@@ -11,21 +11,21 @@ This plan implements [MVP specification 0001](docs/specs/0001-mvp.md). Requireme
 
 ## Phase 1: protocol and conflict engine
 
-- [ ] Implement the versioned intent schema.
-- [ ] Normalize database object identities.
-- [ ] Detect duplicate additions, drops against modifications, concurrent alterations, and rename conflicts.
-- [ ] Detect dependencies on tables proposed by another intent.
-- [ ] Test every required operation and conflict category.
+- [x] Implement the versioned intent schema.
+- [x] Normalize database object identities.
+- [x] Detect duplicate additions, drops against modifications, concurrent alterations, and rename conflicts.
+- [x] Detect dependencies on tables proposed by another intent.
+- [x] Test every required operation and conflict category.
 
 Exit criterion: the three-developer conflict scenario runs entirely as a pure unit test.
 
 ## Phase 2: coordinator service
 
-- [ ] Implement SQLAlchemy persistence for projects, intents, operations, checks, leases, and audit events.
-- [ ] Implement the application service layer.
-- [ ] Expose the FastAPI endpoints in the specification.
-- [ ] Add optional bearer-token authentication.
-- [ ] Test the HTTP lifecycle using an isolated database.
+- [x] Implement SQLAlchemy persistence for projects, intents, operations, checks, leases, and audit events.
+- [x] Implement the application service layer.
+- [x] Expose the FastAPI endpoints in the specification.
+- [x] Add optional bearer-token authentication.
+- [x] Test the HTTP lifecycle using an isolated database.
 
 Exit criterion: a client can create a project, submit intents, check them, approve a safe intent, and acquire a finalization lease.
 
