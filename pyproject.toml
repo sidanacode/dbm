@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dbm-coordinator"
+version = "0.1.0"
+description = "Pre-merge coordination for database migration intent"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "DBM contributors" }]
+keywords = ["alembic", "database", "migrations", "mcp", "sqlalchemy"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Database",
+  "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = [
+  "alembic>=1.17,<2",
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "mcp>=2,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "sqlalchemy>=2.0.44,<3",
+  "typer>=0.16,<1",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.11,<1",
+]
+
+[project.scripts]
+dbm = "dbm_coordinator.cli:app"
+dbm-api = "dbm_coordinator.api.main:run"
+dbm-mcp = "dbm_coordinator.mcp_server:run"
+
+[project.urls]
+Documentation = "https://github.com/tanishsidana/dbm"
+Issues = "https://github.com/tanishsidana/dbm/issues"
+Source = "https://github.com/tanishsidana/dbm"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbm_coordinator"]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --strict-config"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+packages = ["dbm_coordinator"]
+

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DBM — How it prevents Alembic conflicts</title>
+  <style>
+    :root {
+      --ink: #182033;
+      --muted: #657083;
+      --paper: #f5f3ec;
+      --white: #ffffff;
+      --navy: #17233d;
+      --blue: #3264d6;
+      --blue-soft: #e7edfc;
+      --green: #24785a;
+      --green-soft: #e1f1e9;
+      --red: #a43d3d;
+      --red-soft: #f8e4e2;
+      --line: #d8d5cc;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-snap-type: y mandatory; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #d9d6ce;
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .slide {
+      position: relative;
+      width: min(100vw, 177.78vh);
+      min-height: 100vh;
+      margin: 0 auto 2px;
+      padding: clamp(56px, 7vh, 86px) clamp(38px, 7vw, 108px);
+      overflow: hidden;
+      background: var(--paper);
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .dark { color: var(--white); background: var(--navy); }
+    .number {
+      position: absolute;
+      top: 24px;
+      right: 34px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .08em;
+    }
+    .dark .number { color: #b9c4d8; }
+
+    .kicker {
+      margin: 0 0 15px;
+      color: var(--blue);
+      font-size: clamp(13px, 1.2vw, 18px);
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .dark .kicker { color: #91b3ff; }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 980px;
+      margin-bottom: 24px;
+      font-size: clamp(50px, 7vw, 102px);
+      line-height: .98;
+      letter-spacing: -.055em;
+    }
+    h2 {
+      max-width: 1050px;
+      margin-bottom: clamp(28px, 5vh, 52px);
+      font-size: clamp(36px, 5vw, 70px);
+      line-height: 1.04;
+      letter-spacing: -.045em;
+    }
+    h3 { margin-bottom: 10px; font-size: clamp(21px, 2.1vw, 31px); }
+    p, li { font-size: clamp(18px, 1.7vw, 27px); line-height: 1.45; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .muted { color: var(--muted); }
+    .lead { max-width: 900px; color: #d7deec; font-size: clamp(22px, 2.4vw, 35px); }
+
+    .mark { width: 88px; height: 10px; margin-bottom: 28px; background: #91b3ff; }
+
+    .story {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: clamp(30px, 5vw, 76px);
+      align-items: center;
+    }
+    .schema { padding: 28px; border: 2px solid var(--line); background: var(--white); }
+    .schema-title {
+      display: flex;
+      justify-content: space-between;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--ink);
+      font-size: clamp(20px, 2vw, 30px);
+      font-weight: 800;
+    }
+    .schema-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(16px, 1.5vw, 23px);
+    }
+    .schema-row:last-child { border-bottom: 0; }
+    .people { display: grid; gap: 28px; }
+    .person { display: grid; grid-template-columns: 56px 1fr; gap: 18px; }
+    .avatar {
+      width: 54px;
+      height: 54px;
+      border: 2px solid var(--blue);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-weight: 800;
+    }
+    .person p { margin: 0; color: var(--muted); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .step {
+      min-height: 190px;
+      padding: 22px 19px;
+      border-top: 6px solid var(--blue);
+      background: var(--white);
+      color: var(--ink);
+    }
+    .step b { display: block; margin-bottom: 28px; color: var(--blue); font-size: 14px; letter-spacing: .1em; }
+    .step strong { display: block; margin-bottom: 10px; font-size: clamp(17px, 1.55vw, 23px); }
+    .step p { margin: 0; color: var(--muted); font-size: clamp(14px, 1.15vw, 18px); }
+
+    .branches {
+      display: grid;
+      grid-template-columns: .7fr 1.2fr .9fr;
+      gap: clamp(24px, 4vw, 60px);
+      align-items: center;
+    }
+    .revision, .branch {
+      padding: 24px;
+      background: var(--white);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(16px, 1.55vw, 24px);
+      font-weight: 750;
+    }
+    .revision { border: 2px solid var(--ink); text-align: center; }
+    .fork { display: grid; gap: 30px; }
+    .branch { border-left: 7px solid var(--blue); background: var(--blue-soft); line-height: 1.45; }
+    .warning { padding: 28px; border-left: 8px solid var(--red); background: var(--red-soft); }
+    .warning p { margin: 0; }
+
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(26px, 5vw, 72px); }
+    .code {
+      padding: 26px;
+      color: #edf2fb;
+      background: #101827;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(16px, 1.55vw, 24px);
+      line-height: 1.6;
+    }
+
+    .conflict { padding: clamp(28px, 4vw, 52px); border: 3px solid var(--red); background: var(--white); }
+    .conflict-label { color: var(--red); font-size: 18px; font-weight: 850; letter-spacing: .12em; }
+    .rename {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 20px;
+      align-items: center;
+      margin: 28px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: clamp(18px, 2vw, 30px);
+      font-weight: 750;
+    }
+    .rename span:nth-child(2) { color: var(--blue); }
+
+    .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+    .time {
+      min-height: 215px;
+      padding: 28px;
+      border-top: 7px solid var(--green);
+      background: var(--white);
+    }
+    .time p { color: var(--muted); }
+    .time code { color: var(--green); font-size: clamp(15px, 1.3vw, 20px); }
+
+    .safe {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: clamp(24px, 4vw, 54px);
+      align-items: center;
+    }
+    .intent { padding: 30px; border: 2px solid var(--line); background: var(--white); }
+    .intent small { color: var(--muted); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .intent code { display: block; margin-top: 18px; font-size: clamp(17px, 1.8vw, 27px); }
+    .safe-result { padding: 14px 18px; color: var(--green); border: 2px solid var(--green); background: var(--green-soft); font-weight: 850; }
+
+    .roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 34px; }
+    .role { min-height: 220px; padding: 24px; border-top: 7px solid var(--blue); background: var(--white); }
+    .role:nth-child(2) { border-top-color: var(--green); }
+    .role:nth-child(3) { border-top-color: #9d6200; }
+    .role:nth-child(4) { border-top-color: var(--ink); }
+    .role p { color: var(--muted); font-size: clamp(15px, 1.3vw, 20px); }
+
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+    .compare > div { min-height: 320px; padding: clamp(28px, 4vw, 48px); background: var(--white); color: var(--ink); }
+    .without { border-top: 8px solid var(--red); }
+    .with { border-top: 8px solid var(--green); }
+    .compare li { margin-bottom: 13px; }
+    .closing { margin-top: 38px; font-size: clamp(32px, 4.7vw, 68px); line-height: 1.08; letter-spacing: -.04em; }
+    .closing strong { color: #91b3ff; }
+
+    .nav { position: absolute; right: 32px; bottom: 24px; display: flex; gap: 9px; }
+    .nav a {
+      width: 38px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background: var(--white);
+      text-decoration: none;
+    }
+    .dark .nav a { color: var(--white); border-color: #46536b; background: #22304d; }
+    .source { position: absolute; left: clamp(38px, 7vw, 108px); bottom: 24px; color: var(--muted); font-size: 13px; }
+    .source a { color: inherit; }
+
+    @media (max-width: 900px) {
+      html { scroll-snap-type: none; }
+      .slide { width: 100%; min-height: auto; padding: 70px 28px; }
+      .story, .branches, .two, .compare { grid-template-columns: 1fr; }
+      .flow, .timeline { grid-template-columns: 1fr; }
+      .step, .time { min-height: auto; }
+      .safe { grid-template-columns: 1fr; }
+      .safe-result { text-align: center; }
+      .roles { grid-template-columns: 1fr 1fr; }
+      .source { position: static; margin-top: 34px; }
+    }
+    @media (max-width: 560px) {
+      .roles { grid-template-columns: 1fr; }
+      .rename { grid-template-columns: 1fr; }
+      .rename span:nth-child(2) { text-align: center; transform: rotate(90deg); }
+    }
+    @media print {
+      @page { size: 16in 9in; margin: 0; }
+      .slide { width: 16in; height: 9in; min-height: 9in; margin: 0; break-after: page; }
+      .nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="slide dark" id="slide-1">
+      <span class="number">01 / 09</span>
+      <div class="mark"></div>
+      <p class="kicker">Database migration coordination</p>
+      <h1>How DBM prevents Alembic conflicts</h1>
+      <p class="lead">A developer story about two feature branches changing the same database column.</p>
+      <nav class="nav"><a href="#slide-2" aria-label="Next slide">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-2">
+      <span class="number">02 / 09</span>
+      <p class="kicker">The user story</p>
+      <h2>Maya and Ravi start from the same database</h2>
+      <div class="story">
+        <div class="schema">
+          <div class="schema-title"><span>users</span><span>M10</span></div>
+          <div class="schema-row"><span>id</span><span>BIGINT</span></div>
+          <div class="schema-row"><span>name</span><span>VARCHAR(100)</span></div>
+          <div class="schema-row"><span>email</span><span>VARCHAR(255)</span></div>
+        </div>
+        <div class="people">
+          <div class="person"><div class="avatar">M</div><div><h3>Maya</h3><p>Renames <strong>users.name</strong> to <strong>users.full_name</strong>.</p></div></div>
+          <div class="person"><div class="avatar">R</div><div><h3>Ravi</h3><p>Increases <strong>users.name</strong> from 100 to 300 characters.</p></div></div>
+        </div>
+      </div>
+      <nav class="nav"><a href="#slide-1">←</a><a href="#slide-3">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-3">
+      <span class="number">03 / 09</span>
+      <p class="kicker">Alembic today</p>
+      <h2>Each developer sees only their own branch</h2>
+      <div class="flow">
+        <div class="step"><b>01</b><strong>Change model</strong><p>Edit a SQLAlchemy model.</p></div>
+        <div class="step"><b>02</b><strong>Generate</strong><p>Alembic reads local code and database state.</p></div>
+        <div class="step"><b>03</b><strong>Create file</strong><p>The migration points to local head M10.</p></div>
+        <div class="step"><b>04</b><strong>Open PR</strong><p>Other branches still cannot see the migration.</p></div>
+        <div class="step"><b>05</b><strong>Merge</strong><p>The team finally sees both files together.</p></div>
+      </div>
+      <nav class="nav"><a href="#slide-2">←</a><a href="#slide-4">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-4">
+      <span class="number">04 / 09</span>
+      <p class="kicker">The collision</p>
+      <h2>Both migrations point to M10</h2>
+      <div class="branches">
+        <div class="revision">M10<br><span class="muted">current head</span></div>
+        <div class="fork">
+          <div class="branch">M11_A<br>RENAME name TO full_name</div>
+          <div class="branch">M11_B<br>ALTER name TYPE VARCHAR(300)</div>
+        </div>
+        <div class="warning"><h3>Two heads</h3><p>Alembic sees a branch in its migration graph. The team must reconcile it.</p></div>
+      </div>
+      <p class="source">Alembic supports branched histories and merge revisions. <a href="https://alembic.sqlalchemy.org/en/latest/branches.html">Official documentation</a></p>
+      <nav class="nav"><a href="#slide-3">←</a><a href="#slide-5">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-5">
+      <span class="number">05 / 09</span>
+      <p class="kicker">The hidden problem</p>
+      <h2>A merge revision joins history, but cannot repair intent</h2>
+      <div class="two">
+        <div><h3>After Maya's migration</h3><div class="code">users.full_name<br>VARCHAR(100)</div></div>
+        <div><h3>Ravi's migration still runs</h3><div class="code">ALTER TABLE users<br>ALTER COLUMN name<br>TYPE VARCHAR(300);</div></div>
+      </div>
+      <div class="warning" style="margin-top:32px"><p><strong>Deployment error:</strong> column <code>users.name</code> no longer exists. Someone must understand both features and rewrite Ravi's migration.</p></div>
+      <nav class="nav"><a href="#slide-4">←</a><a href="#slide-6">→</a></nav>
+    </section>
+
+    <section class="slide dark" id="slide-6">
+      <span class="number">06 / 09</span>
+      <p class="kicker">Workflow with DBM</p>
+      <h2>Developers share intent before generating migrations</h2>
+      <div class="flow">
+        <div class="step"><b>01</b><strong>Change model</strong><p>Make the application change.</p></div>
+        <div class="step"><b>02</b><strong>Describe intent</strong><p>The agent creates a structured schema operation.</p></div>
+        <div class="step"><b>03</b><strong>Check DBM</strong><p>Compare accepted changes and active work.</p></div>
+        <div class="step"><b>04</b><strong>Resolve</strong><p>The agent explains. The developer decides.</p></div>
+        <div class="step"><b>05</b><strong>Generate</strong><p>Alembic uses the latest accepted head.</p></div>
+      </div>
+      <nav class="nav"><a href="#slide-5">←</a><a href="#slide-7">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-7">
+      <span class="number">07 / 09</span>
+      <p class="kicker">Early detection</p>
+      <h2>DBM connects Ravi's change to Maya's rename</h2>
+      <div class="conflict">
+        <p class="conflict-label">CONFLICT FOUND</p>
+        <p>Ravi submitted: <strong>ALTER users.name</strong></p>
+        <p>Maya already submitted this rename:</p>
+        <div class="rename"><span>users.name</span><span>→</span><span>users.full_name</span></div>
+        <p><strong>Suggested resolution:</strong> change <code>users.full_name</code> after Maya's rename. Ravi must approve this interpretation.</p>
+      </div>
+      <nav class="nav"><a href="#slide-6">←</a><a href="#slide-8">→</a></nav>
+    </section>
+
+    <section class="slide" id="slide-8">
+      <span class="number">08 / 09</span>
+      <p class="kicker">Resolved history</p>
+      <h2>The final migrations follow the accepted merge order</h2>
+      <div class="timeline">
+        <div class="time"><h3>M10</h3><p>The original accepted head.</p><code>users.name VARCHAR(100)</code></div>
+        <div class="time"><h3>M11</h3><p>Maya's pull request merges first.</p><code>name → full_name</code></div>
+        <div class="time"><h3>M12</h3><p>Ravi refreshes and generates the migration.</p><code>full_name VARCHAR(300)</code></div>
+      </div>
+      <p style="margin-top:30px"><strong>DBM coordinates the work. Git determines accepted order. Alembic creates and executes migration files.</strong></p>
+      <nav class="nav"><a href="#slide-7">←</a><a href="#slide-9">→</a></nav>
+    </section>
+
+    <section class="slide dark" id="slide-9">
+      <span class="number">09 / 09</span>
+      <p class="kicker">The difference</p>
+      <div class="compare">
+        <div class="without"><h3>With Alembic alone</h3><ol><li>Developers create migrations independently.</li><li>Git combines their branches.</li><li>The team finds conflicts during merge or deployment.</li></ol></div>
+        <div class="with"><h3>With DBM and Alembic</h3><ol><li>Developers share schema intent first.</li><li>DBM finds cross-branch conflicts early.</li><li>Alembic generates migrations after resolution.</li></ol></div>
+      </div>
+      <p class="closing">DBM helps the team resolve the <strong>meaning</strong> of a change before Alembic records it.</p>
+      <nav class="nav"><a href="#slide-8">←</a><a href="#slide-1">↥</a></nav>
+    </section>
+  </main>
+</body>
+</html>
