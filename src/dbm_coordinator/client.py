@@ -41,6 +41,13 @@ class CoordinatorClient:
     def create_project(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request_object("POST", "/v1/projects", json=payload)
 
+    def list_providers(self, kind: str | None = None) -> list[dict[str, Any]]:
+        params = {"kind": kind} if kind else None
+        result = self._request("GET", "/v1/providers", params=params)
+        if not isinstance(result, list) or not all(isinstance(item, dict) for item in result):
+            raise CoordinatorClientError("invalid_response", "Expected a provider list.")
+        return cast(list[dict[str, Any]], result)
+
     def get_project_state(self, project_id: str) -> dict[str, Any]:
         return self._request_object("GET", f"/v1/projects/{project_id}/state")
 

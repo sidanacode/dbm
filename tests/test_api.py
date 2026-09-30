@@ -73,6 +73,16 @@ def test_health_is_public(client: TestClient) -> None:
     assert client.get("/health").json() == {"status": "ok"}
 
 
+def test_provider_catalog_can_be_filtered(client: TestClient) -> None:
+    response = client.get("/v1/providers", params={"kind": "source_control"})
+    assert response.status_code == 200
+    providers = response.json()
+    assert {item["id"] for item in providers} >= {"local-git", "github", "gitlab"}
+    gitlab = next(item for item in providers if item["id"] == "gitlab")
+    assert gitlab["lifecycle"] == "planned"
+    assert gitlab["capabilities"] == []
+
+
 def test_ac_001_conflict_story_over_http(client: TestClient) -> None:
     project_id = create_project(client)
     rename = submit(
