@@ -8,7 +8,7 @@ Target branch: `feat/schema-verification`, after specification 0001 is merged
 
 ## 1. Purpose
 
-Allow DBM to inspect the actual PostgreSQL schema and Alembic revision of configured environments without granting permission to alter those databases. Compare observed state with accepted Git history and candidate migration assumptions.
+Allow DBM to inspect an application's actual database schema and migration revision through a database provider without granting permission to alter that database. Compare observed state with accepted Git history and candidate migration assumptions.
 
 Read-only inspection reduces uncertainty but cannot guarantee that a later deployment will have no conflict. DBM reports which checks ran, the schema fingerprint they used, and when the observation occurred.
 
@@ -23,7 +23,7 @@ Intent precondition verification
     confirm referenced objects and expected before-state
                     |
                     v
-Disposable shadow PostgreSQL
+Disposable provider-matched shadow database
     reconstruct schema and apply candidate migration
                     |
                     v
@@ -37,7 +37,7 @@ The real environment is never used as the shadow database.
 
 ### REQ-ENV-001: environment configuration
 
-A project administrator can configure named PostgreSQL environments such as development, staging, and production. API responses expose connection metadata but never return passwords or complete connection strings.
+A project administrator can configure named database environments such as development, staging, and production. Each environment selects a database provider and provider-specific connection settings. API responses expose safe metadata but never return passwords or complete connection strings.
 
 ### REQ-ENV-002: secret storage
 
@@ -45,15 +45,15 @@ The coordinator stores either an external secret reference or an encrypted conne
 
 ### REQ-ENV-003: connection validation
 
-DBM tests DNS, TCP, TLS, authentication, PostgreSQL version, database identity, and catalog-read access. It rejects a connection when the DBM session cannot enforce read-only transactions.
+DBM tests the provider's applicable transport, encryption, authentication, server version, database identity, and catalog-read access. It rejects a connection when the provider cannot establish its required read-only guarantees.
 
 ### REQ-INSPECT-001: catalog inspection
 
-DBM reads PostgreSQL catalogs to capture schemas, tables, columns, defaults, generated expressions, nullability, constraints, indexes, enum and domain types, and the configured Alembic version table.
+The database provider reads native catalogs and maps them into DBM's canonical schema model: namespaces, tables, columns, defaults, generated expressions, nullability, constraints, indexes, types, and the configured migration-version store. Provider-specific facts remain in a namespaced extension object.
 
 ### REQ-INSPECT-002: schema fingerprint
 
-DBM normalizes the observed catalog and computes a deterministic SHA-256 fingerprint. Every result records the fingerprint, environment, database identity, PostgreSQL version, and observation time.
+DBM normalizes the observed catalog and computes a deterministic SHA-256 fingerprint. Every result records the fingerprint, environment, provider, database identity, server version, and observation time.
 
 ### REQ-DRIFT-001: drift comparison
 
@@ -69,7 +69,7 @@ A verified result expires. Finalization must recheck when the observed fingerpri
 
 ### REQ-SHADOW-001: disposable migration validation
 
-DBM creates an isolated PostgreSQL shadow database, reconstructs the accepted schema, applies the candidate Alembic migration, and captures the resulting schema fingerprint. DBM destroys the shadow database after the run.
+DBM creates an isolated, provider-compatible shadow database, reconstructs the accepted schema, applies the candidate migration through its migration provider, and captures the resulting schema fingerprint. DBM destroys the shadow database after the run.
 
 ### REQ-SHADOW-002: real data limitations
 
@@ -77,8 +77,8 @@ When a constraint depends on existing data, schema-only validation reports that 
 
 ## 4. Security requirements
 
-- Force read-only transactions for every real-environment inspection.
-- Recommend and verify a dedicated PostgreSQL role with catalog and table read access only.
+- Enforce the strongest read-only session and credential controls supported by the database provider.
+- Require a dedicated inspection identity with only catalog and necessary table-read access.
 - Never send connection secrets to MCP clients, coding agents, logs, traces, or audit payloads.
 - Block private-network destinations unless the deployment administrator explicitly allows the network range.
 - Prevent DNS rebinding and other server-side request forgery during connection tests.
@@ -123,5 +123,6 @@ Given accepted Git head `m12` and environment revision `m10`, DBM reports `behin
 - storing production data in DBM;
 - automatic repair of schema drift;
 - long-lived database tunnels managed by DBM;
-- database engines other than PostgreSQL.
-
+- cross-engine migration conversion;
+- non-relational databases until a provider defines compatible intent and schema semantics;
+- marking any database provider available before its integration acceptance suite passes.

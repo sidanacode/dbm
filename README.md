@@ -11,7 +11,7 @@ DBM is the migration control plane. It coordinates intent, verifies real schema 
 
 ## Project status
 
-DBM is an early open-source MVP under active development. The first supported stack is PostgreSQL, SQLAlchemy, Alembic, Git, FastAPI, and MCP.
+DBM is an early open-source MVP under active development. Its first target stack is PostgreSQL, SQLAlchemy, Alembic, GitHub, FastAPI, and MCP. A capability-based provider interface keeps the coordinator independent of database, source-control, and CI vendors, and the live provider catalog distinguishes shipped capabilities from planned ones.
 
 ## Core rule
 
@@ -59,6 +59,7 @@ uv run dbm init \
   --alembic-config alembic.ini
 
 uv run dbm inspect
+uv run dbm providers
 uv run dbm submit examples/intents/rename-name.json
 ```
 
@@ -97,7 +98,7 @@ uv run dbm-api
 
 The coordinator uses `sqlite:///./dbm.db` by default for local development. Copy `.env.example` and set `DBM_DATABASE_URL` to use PostgreSQL.
 
-See the [MVP specification](docs/specs/0001-mvp.md), [implementation plan](PLAN.md), and [roadmap](ROADMAP.md). Follow-on designs cover the [GitHub App and setup console](docs/specs/0002-github-app-console.md), [read-only schema verification](docs/specs/0003-schema-verification.md), and [CI-controlled deployment runner](docs/specs/0004-ci-deployment-runner.md).
+Start with the [end-to-end user journey](docs/user-journey.md). See the [MVP specification](docs/specs/0001-mvp.md), [implementation plan](PLAN.md), and [roadmap](ROADMAP.md). Follow-on designs cover the [source-control apps and setup console](docs/specs/0002-source-control-app-console.md), [read-only schema verification](docs/specs/0003-schema-verification.md), [CI-controlled deployment runner](docs/specs/0004-ci-deployment-runner.md), and [provider architecture](docs/specs/0005-provider-architecture.md).
 
 ## License
 

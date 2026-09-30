@@ -33,7 +33,7 @@ The always-on coordinator never holds production DDL credentials and never execu
 
 1. CI requests deployment of an exact artifact to an exact environment.
 2. DBM evaluates environment policy and required approvals.
-3. DBM acquires a coordinator deployment lock and a PostgreSQL advisory lock.
+3. DBM acquires a coordinator deployment lock and the database provider's native lock.
 4. DBM rechecks the real environment using read-only inspection.
 5. A one-shot runner receives a short-lived migration credential.
 6. The runner invokes Alembic for the approved target.
@@ -52,7 +52,7 @@ Before execution, DBM records the current environment revision, ordered revision
 
 ### REQ-LOCK-001: environment serialization
 
-Only one deployment can target an environment at a time. DBM uses both a coordinator lock and a database advisory lock to defend against multiple runners.
+Only one deployment can target an environment at a time. DBM uses both a coordinator lock and a database-provider lock to defend against multiple runners. When an engine has no safe native advisory lock, the provider must declare its alternative serialization guarantee before deployment can be enabled.
 
 ### REQ-CREDENTIAL-001: separate migration identity
 
@@ -70,13 +70,25 @@ A deployment succeeds only after the environment reports the target Alembic revi
 
 Every attempt records artifact digest, environment, actor, approvals, start and finish times, applied revisions, verification fingerprints, runner identity, and final status.
 
-### REQ-CI-001: required GitHub checks
+### REQ-CI-001: required source-control checks
 
-The GitHub App publishes separate plan and verification checks on pull requests. Branch protection can require them before merge.
+The source-control provider publishes separate plan and verification checks on pull requests or merge requests. Branch protection can require them before merge.
 
 ### REQ-CI-002: deployment command
 
 CI uses `dbm deploy --artifact DIGEST --environment NAME`. Direct `alembic upgrade` is absent from official workflows and production migration credentials are unavailable outside the DBM runner.
+
+### REQ-CI-003: check identity and invalidation
+
+Every green check is bound to an exact source commit, accepted migration-graph digest, intent version, and observed schema fingerprint. A new default-branch merge or changed environment fingerprint invalidates results derived from the previous state.
+
+### REQ-CI-004: merge-queue support
+
+Source-control providers can check GitHub merge-queue and GitLab merge-train commits. DBM evaluates the combined candidate graph rather than assuming individually safe branches remain safe together.
+
+### REQ-QUEUE-001: ordered environment queue
+
+DBM may verify jobs concurrently but executes at most one migration job per environment. Artifacts deploy in an order compatible with accepted Git ancestry and Alembic dependencies. A job with a missing predecessor remains blocked.
 
 ### REQ-RECOVERY-001: interrupted deployment
 
@@ -130,5 +142,5 @@ DBM becomes the sole migration path through controls rather than a claim:
 - automatic production rollback;
 - data backfill workers;
 - zero-downtime policy generation;
-- database engines other than PostgreSQL;
-- migration frameworks other than Alembic.
+- automatic conversion between database engines;
+- migration frameworks other than Alembic until their providers implement the execution contract.
