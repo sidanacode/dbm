@@ -1,0 +1,27 @@
+{
+  "protocol_version": 1,
+  "title": "Increase users.name length",
+  "source": {
+    "branch": "feature/longer-name",
+    "commit_sha": "789abc",
+    "base_heads": ["m10"],
+    "migration_graph_digest": "sha256:accepted"
+  },
+  "operations": [
+    {
+      "kind": "alter_column",
+      "object": {
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "name"
+      },
+      "before": {
+        "type": "varchar(100)"
+      },
+      "after": {
+        "type": "varchar(300)"
+      }
+    }
+  ]
+}
+

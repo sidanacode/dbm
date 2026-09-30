@@ -1,0 +1,25 @@
+{
+  "protocol_version": 1,
+  "title": "Add users.phone",
+  "source": {
+    "branch": "feature/user-phone",
+    "commit_sha": "abc123",
+    "base_heads": ["m10"],
+    "migration_graph_digest": "sha256:accepted"
+  },
+  "operations": [
+    {
+      "kind": "add_column",
+      "object": {
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "phone"
+      },
+      "after": {
+        "type": "varchar(30)",
+        "nullable": true
+      }
+    }
+  ]
+}
+

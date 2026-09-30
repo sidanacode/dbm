@@ -1,0 +1,26 @@
+{
+  "protocol_version": 1,
+  "title": "Rename users.name to users.full_name",
+  "source": {
+    "branch": "feature/full-name",
+    "commit_sha": "def456",
+    "base_heads": ["m10"],
+    "migration_graph_digest": "sha256:accepted"
+  },
+  "operations": [
+    {
+      "kind": "rename_column",
+      "object": {
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "name"
+      },
+      "new_object": {
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "full_name"
+      }
+    }
+  ]
+}
+

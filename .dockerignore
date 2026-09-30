@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+__pycache__
+*.pyc
+dbm.db
+.dbm.toml
+tests
+docs
+dbm-presentation.html
+
