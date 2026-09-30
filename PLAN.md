@@ -61,6 +61,7 @@ Exit criterion: a new contributor can clone the repository and run the demo from
 
 ## Follow-on specifications
 
-- [ ] Specification 0002: GitHub App and setup console on `feat/github-app-console`.
+- [x] Specification 0005: provider architecture on `feat/provider-architecture`.
+- [ ] Specification 0002: source-control apps and setup console on `feat/source-control-console`.
 - [ ] Specification 0003: read-only schema verification and shadow validation on `feat/schema-verification`.
 - [ ] Specification 0004: CI-controlled migration deployment on `feat/deployment-runner`.

@@ -9,6 +9,7 @@ def test_mcp_exposes_required_tools() -> None:
     tools = asyncio.run(server.list_tools())
     assert {tool.name for tool in tools} == {
         "get_project_state",
+        "list_providers",
         "submit_intent",
         "list_intents",
         "check_intent",

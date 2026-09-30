@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     api_url: str = "http://localhost:8000"
     coordinator_url: str = "http://localhost:8000"
     lease_ttl_seconds: int = Field(default=600, ge=30, le=86_400)
+    enable_provider_plugins: bool = False
     mcp_transport: Literal["stdio", "streamable-http"] = "streamable-http"
     mcp_host: str = "0.0.0.0"
     mcp_port: int = Field(default=8001, ge=1, le=65_535)

@@ -19,6 +19,7 @@ from dbm_coordinator.config import (
     write_config,
 )
 from dbm_coordinator.git_adapter import GitInspectionError, inspect_git
+from dbm_coordinator.providers import ProviderKind
 
 app = typer.Typer(
     name="dbm",
@@ -82,6 +83,16 @@ def state(
     """Show accepted coordinator state for this project."""
     config = _load(config_path)
     _call(config, lambda client: client.get_project_state(config.project_id))
+
+
+@app.command()
+def providers(
+    kind: Annotated[ProviderKind | None, typer.Option(help="Filter by provider kind.")] = None,
+    config_path: Annotated[Path, typer.Option()] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """List database, source-control, CI, and migration providers."""
+    config = _load(config_path)
+    _call(config, lambda client: client.list_providers(kind.value if kind else None))
 
 
 @app.command("sync-state")

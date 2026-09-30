@@ -20,6 +20,7 @@ from dbm_coordinator.api.schemas import (
 )
 from dbm_coordinator.database import Database
 from dbm_coordinator.domain import CheckResult, IntentSubmission
+from dbm_coordinator.providers import ProviderKind, ProviderManifest, create_provider_registry
 from dbm_coordinator.service import CoordinatorService, ServiceError
 from dbm_coordinator.settings import Settings, get_settings
 
@@ -27,6 +28,7 @@ from dbm_coordinator.settings import Settings, get_settings
 def create_app(settings: Settings | None = None) -> FastAPI:
     runtime_settings = settings or get_settings()
     database = Database(runtime_settings.database_url)
+    providers = create_provider_registry(discover_plugins=runtime_settings.enable_provider_plugins)
     bearer = HTTPBearer(auto_error=False)
 
     @asynccontextmanager
@@ -42,6 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.database = database
     app.state.settings = runtime_settings
+    app.state.providers = providers
 
     def get_session() -> Iterator[Session]:
         yield from database.sessions()
@@ -71,6 +74,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/v1/providers", response_model=list[ProviderManifest])
+    def list_providers(
+        _: AuthDependency,
+        kind: ProviderKind | None = None,
+    ) -> list[ProviderManifest]:
+        return providers.manifests(kind)
 
     @app.post("/v1/projects", response_model=ProjectRead, status_code=201)
     def create_project(

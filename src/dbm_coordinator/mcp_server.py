@@ -41,6 +41,11 @@ def create_mcp_server(settings: Settings | None = None) -> MCPServer:
         return call(lambda client: client.get_project_state(project_id))
 
     @server.tool()
+    def list_providers(kind: str | None = None) -> list[dict[str, Any]]:
+        """List integration providers and their actually available capabilities."""
+        return call(lambda client: client.list_providers(kind))
+
+    @server.tool()
     def submit_intent(project_id: str, intent: dict[str, Any]) -> dict[str, Any]:
         """Submit a version 1 structured schema-change intent."""
         return call(lambda client: client.submit_intent(project_id, intent))
