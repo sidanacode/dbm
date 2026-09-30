@@ -48,9 +48,9 @@ dbm-api = "dbm_coordinator.api.main:run"
 dbm-mcp = "dbm_coordinator.mcp_server:run"
 
 [project.urls]
-Documentation = "https://github.com/tanishsidana/dbm"
-Issues = "https://github.com/tanishsidana/dbm/issues"
-Source = "https://github.com/tanishsidana/dbm"
+Documentation = "https://github.com/sidanacode/dbm"
+Issues = "https://github.com/sidanacode/dbm/issues"
+Source = "https://github.com/sidanacode/dbm"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dbm_coordinator"]
@@ -71,4 +71,3 @@ python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
 packages = ["dbm_coordinator"]
-

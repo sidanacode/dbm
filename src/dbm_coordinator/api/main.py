@@ -1,5 +1,6 @@
 """FastAPI application for the DBM coordinator."""
 
+import secrets
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
@@ -53,7 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return
         if credentials is None or credentials.scheme.lower() != "bearer":
             raise ServiceError("unauthorized", "A bearer token is required.", 401)
-        if credentials.credentials != expected:
+        if not secrets.compare_digest(credentials.credentials, expected):
             raise ServiceError("unauthorized", "The bearer token is invalid.", 401)
 
     SessionDependency = Annotated[Session, Depends(get_session)]

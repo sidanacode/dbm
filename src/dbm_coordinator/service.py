@@ -228,7 +228,13 @@ class CoordinatorService:
 
     def acquire_lease(self, intent_id: str) -> RevisionLeaseModel:
         intent = self.get_intent(intent_id)
-        project = self.get_project(intent.project_id)
+        # Locking the project row serializes lease acquisition in PostgreSQL. Without
+        # this, two transactions can both observe an empty lease table and proceed.
+        project = self.session.scalar(
+            select(ProjectModel).where(ProjectModel.id == intent.project_id).with_for_update()
+        )
+        if project is None:
+            raise ServiceError("project_not_found", "Project was not found.", 404)
         if intent.status != IntentStatus.APPROVED.value:
             raise ServiceError(
                 "intent_not_approved",
